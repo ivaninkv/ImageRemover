@@ -14,7 +14,7 @@ type Config struct {
 		Namespace string `yaml:"Namespace"`
 		Token     string `yaml:"Token"`
 	} `yaml:"KubeCluster"`
-	DockerRegistry struct {
+	DockerRegistry []struct {
 		ServerUrl    string `yaml:"ServerUrl"`
 		Folder       string `yaml:"Folder"`
 		User         string `yaml:"User"`
