@@ -5,11 +5,13 @@ import (
 	"gopkg.in/yaml.v2"
 	"imageRemover/logger"
 	"os"
+	"reflect"
 )
 
 type Config struct {
-	KubeCluster struct {
+	KubeCluster []struct {
 		ServerUrl string `yaml:"ServerUrl"`
+		Namespace string `yaml:"Namespace"`
 		Token     string `yaml:"Token"`
 	} `yaml:"KubeCluster"`
 	DockerRegistry struct {
@@ -40,7 +42,7 @@ func ReadConfig(filePath string) (Config, error) {
 		return config, err
 	}
 
-	if config == (Config{}) {
+	if reflect.DeepEqual(config, Config{}) {
 		return config, errors.New("config is empty")
 	}
 

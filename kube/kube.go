@@ -13,29 +13,22 @@ import (
 func GetImages(cfg config.Config) map[string]bool {
 	logger.Log.Debug().Msg("Getting images from deployments")
 
-	err, clientset := createClientset(cfg.KubeCluster.ServerUrl, cfg.KubeCluster.Token)
-	if err != nil {
-		panic(err)
-	}
-
 	// Мапа для хранения образов
 	images := make(map[string]bool)
 
-	// Сохранение деплойментов в срез
-	nsList, err := clientset.CoreV1().Namespaces().List(context.TODO(), metav1.ListOptions{})
-	if err != nil {
-		panic(err.Error())
-	}
-
-	for _, ns := range nsList.Items {
-		logger.Log.Debug().Str("namespace", ns.Name).Msg("Handling namespace:")
-		deploymentList, err := clientset.AppsV1().Deployments(ns.Name).List(context.TODO(), metav1.ListOptions{})
+	for cluster := range cfg.KubeCluster {
+		err, clientset := createClientset(cfg.KubeCluster[cluster].ServerUrl, cfg.KubeCluster[cluster].Token)
 		if err == nil {
-			for _, dpl := range deploymentList.Items {
-				logger.Log.Debug().Str("deployment", dpl.Name).Msg("Handling deployment:")
-				for _, container := range dpl.Spec.Template.Spec.Containers {
-					logger.Log.Debug().Str("container", container.Image).Msg("Handling container:")
-					images[container.Image] = true
+			// Сохранение деплойментов в срез
+			logger.Log.Debug().Str("namespace", cfg.KubeCluster[cluster].Namespace).Msg("Handling namespace:")
+			deploymentList, err := clientset.AppsV1().Deployments(cfg.KubeCluster[cluster].Namespace).List(context.TODO(), metav1.ListOptions{})
+			if err == nil {
+				for _, dpl := range deploymentList.Items {
+					logger.Log.Debug().Str("deployment", dpl.Name).Msg("Handling deployment:")
+					for _, container := range dpl.Spec.Template.Spec.Containers {
+						logger.Log.Debug().Str("container", container.Image).Msg("Handling container:")
+						images[container.Image] = true
+					}
 				}
 			}
 		}
