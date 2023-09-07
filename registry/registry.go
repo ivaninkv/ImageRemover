@@ -18,16 +18,15 @@ func GetImages(cfg config.Config) (images map[string]bool) {
 	for _, registryConfig := range cfg.DockerRegistry {
 		headers := makeHeaders(registryConfig.User, registryConfig.Password)
 
-		repos := getRepos(registryConfig.ServerUrl, headers)
+		repos := getRepos(registryConfig.ServerUrl, &headers)
 
 		for _, repo := range repos {
 			if strings.Contains(repo, registryConfig.Folder) {
 				tagsURL := fmt.Sprintf("%s/v2/%s/tags/list", registryConfig.ServerUrl, repo)
-				tagsResp, err := doRequest("GET", tagsURL, headers)
+				tagsResp, err := doRequest("GET", tagsURL, &headers)
 				if err != nil {
 					logger.Log.Error().Err(err).Msg("Can't get tags from registry")
 				}
-				defer tagsResp.Body.Close()
 
 				var tags struct {
 					Tags []string `json:"tags"`
@@ -37,6 +36,10 @@ func GetImages(cfg config.Config) (images map[string]bool) {
 				}
 				for _, tag := range tags.Tags {
 					images[fmt.Sprintf("%s:%s", repo, tag)] = true
+				}
+
+				if err := tagsResp.Body.Close(); err != nil {
+					logger.Log.Error().Err(err).Msg("Can't close tags response")
 				}
 			}
 		}
@@ -48,14 +51,18 @@ func GetImages(cfg config.Config) (images map[string]bool) {
 	return images
 }
 
-func getRepos(serverUrl string, headers map[string]string) []string {
+func getRepos(serverUrl string, headers *map[string]string) []string {
 	catalogURL := fmt.Sprintf("%s/v2/_catalog", serverUrl)
 	catalogResp, err := doRequest("GET", catalogURL, headers)
 	if err != nil {
 		logger.Log.Error().Err(err).Msg("Can't get catalog from registry")
 		panic(err)
 	}
-	defer catalogResp.Body.Close()
+	defer func() {
+		if err := catalogResp.Body.Close(); err != nil {
+			logger.Log.Error().Err(err).Msg("Can't close catalog response")
+		}
+	}()
 
 	var catalog struct {
 		Repositories []string `json:"repositories"`
@@ -75,12 +82,11 @@ func DeleteImages(cfg config.Config, images map[string]bool) {
 			parts := strings.Split(image, ":")
 			repo, tag := parts[0], parts[1]
 			tagUrl := fmt.Sprintf("%s/v2/%s/manifests/%s", registryConfig.ServerUrl, repo, tag)
-			tagResp, err := doRequest("GET", tagUrl, headers)
+			tagResp, err := doRequest("GET", tagUrl, &headers)
 			if err != nil {
 				logger.Log.Warn().Err(err).Str("repo", repo).Str("tag", tag).
 					Msg("Can't get manifest from registry")
 			}
-			defer tagResp.Body.Close()
 
 			dig, err := digest.Parse(tagResp.Header.Get("Docker-Content-Digest"))
 			if err != nil {
@@ -89,13 +95,13 @@ func DeleteImages(cfg config.Config, images map[string]bool) {
 			}
 			digestUrl := fmt.Sprintf("%s/v2/%s/manifests/%s", registryConfig.ServerUrl, repo, dig)
 			if registryConfig.DeleteImages {
-				digResp, err := doRequest("DELETE", digestUrl, headers)
+				digResp, err := doRequest("DELETE", digestUrl, &headers)
 				if err != nil {
 					logger.Log.Warn().Err(err).Str("repo", repo).Str("tag", tag).
 						Str("digest", dig.String()).
 						Msg("Can't delete manifest from registry")
 				}
-				defer digResp.Body.Close()
+
 				if digResp.StatusCode == http.StatusAccepted {
 					logger.Log.Info().Str("repo", repo).Str("tag", tag).
 						Str("digest", dig.String()).
@@ -107,10 +113,18 @@ func DeleteImages(cfg config.Config, images map[string]bool) {
 						Msg("Can't delete manifest from registry. Registry returned: ")
 				}
 
+				if err := digResp.Body.Close(); err != nil {
+					logger.Log.Error().Err(err).Msg("Can't close digest response")
+				}
+
 			} else {
 				logger.Log.Info().Str("repo", repo).Str("tag", tag).
 					Str("digest", dig.String()).
 					Msg("Skipped deleting manifest from registry")
+			}
+
+			if err := tagResp.Body.Close(); err != nil {
+				logger.Log.Error().Err(err).Msg("Can't close tag response")
 			}
 		}
 	}
@@ -126,13 +140,13 @@ func makeHeaders(user, password string) map[string]string {
 	return headers
 }
 
-func doRequest(method string, url string, headers map[string]string) (*http.Response, error) {
+func doRequest(method string, url string, headers *map[string]string) (*http.Response, error) {
 	req, err := http.NewRequest(method, url, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	for key, value := range headers {
+	for key, value := range *headers {
 		req.Header.Set(key, value)
 	}
 
