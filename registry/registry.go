@@ -24,6 +24,7 @@ func GetImages(cfg config.Config) map[string]bool {
 
 		for _, repo := range repos {
 			if strings.Contains(repo, registryConfig.Folder) {
+				logger.Log.Info().Str("repo", repo).Msg("Handling repo:")
 				tagsURL := fmt.Sprintf("%s/v2/%s/tags/list", registryConfig.ServerUrl, repo)
 				tagsResp, err := doRequest("GET", tagsURL, &headers)
 				if err != nil {
@@ -37,6 +38,7 @@ func GetImages(cfg config.Config) map[string]bool {
 					logger.Log.Error().Err(err).Msg("Can't decode tags from registry")
 				}
 				for _, tag := range tags.Tags {
+					logger.Log.Info().Str("tag", tag).Msg("Handling tag:")
 					images[fmt.Sprintf("%s:%s", repo, tag)] = true
 				}
 
