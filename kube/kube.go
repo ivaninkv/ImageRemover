@@ -16,12 +16,12 @@ func GetImages(cfg config.Config) map[string]bool {
 
 	images := make(map[string]bool)
 
-	for cluster := range cfg.KubeCluster {
-		err, clientset := createClientset(cfg.KubeCluster[cluster].ServerUrl, cfg.KubeCluster[cluster].Token)
+	for _, clusterConfig := range cfg.KubeCluster {
+		err, clientset := createClientset(clusterConfig.ServerUrl, clusterConfig.Token)
 		if err == nil {
 			// Сохранение деплойментов в срез
-			logger.Log.Info().Str("namespace", cfg.KubeCluster[cluster].Namespace).Msg("Handling namespace:")
-			deploymentList, err := clientset.AppsV1().Deployments(cfg.KubeCluster[cluster].Namespace).List(context.TODO(), metav1.ListOptions{})
+			logger.Log.Info().Str("namespace", clusterConfig.Namespace).Msg("Handling namespace:")
+			deploymentList, err := clientset.AppsV1().Deployments(clusterConfig.Namespace).List(context.TODO(), metav1.ListOptions{})
 			if err == nil {
 				for _, dpl := range deploymentList.Items {
 					logger.Log.Info().Str("deployment", dpl.Name).Msg("Handling deployment:")
