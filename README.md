@@ -13,14 +13,17 @@
 Приложение имеет конфиг вида:
 ```yaml
 KubeCluster:
-  ServerUrl: https://localhost:52395  # URL-адрес сервера Kubernetes.
-  Token: token                        # Токен для аутентификации в Kubernetes в формате JSON Web Token (JWT).
+  # Массив из одного и более элементов с настроками Kubernetes.
+  - ServerUrl: https://localhost:52395  # URL-адрес сервера Kubernetes.
+    Namespace: afdev                    # Пространство имен, в котором хранятся образы в Kubernetes.
+    Token: token                        # Токен для аутентификации в Kubernetes в формате JSON Web Token (JWT).
 DockerRegistry:
-  ServerUrl: http://localhost:6000    # URL-адрес сервера Docker реестра
-  Folder: folderName                  # Папка в Docker реестре, в которой хранятся образы. 
-  User: ""                            # Имя пользователя для аутентификации в Docker реестре. Пустое значение указывает на отсутствие аутентификации.
-  Password: ""                        # Пароль пользователя для аутентификации в Docker реестре. Пустое значение указывает на отсутствие аутентификации.
-  DeleteImages: true                  # Флаг, указывающий, нужно ли удалять образы из Docker реестра.
+  # Массив из одного и более элементов с настроками Docker реестра.
+  - ServerUrl: http://localhost:6000    # URL-адрес сервера Docker реестра
+    Folder: folderName                  # Папка в Docker реестре, в которой хранятся образы. 
+    User: ""                            # Имя пользователя для аутентификации в Docker реестре. Пустое значение указывает на отсутствие аутентификации.
+    Password: ""                        # Пароль пользователя для аутентификации в Docker реестре. Пустое значение указывает на отсутствие аутентификации.
+    DeleteImages: true                  # Флаг, указывающий, нужно ли удалять образы из Docker реестра.
 Output:
   WriteToTXT: true                    # Флаг, указывающий, нужно ли записывать результаты в текстовые файлы.
   RegistryFileName: registry.txt      # Имя файла, в который записываются найденные в Docker реестре образы.

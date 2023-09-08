@@ -10,6 +10,7 @@ DockerRegistry:
     Folder: ikv
     User: ""
     Password: ""
+    DeleteImages: false
   - ServerUrl: http://localhost:6000
     Folder: ikv
     User: ""
