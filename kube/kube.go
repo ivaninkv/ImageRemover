@@ -58,8 +58,8 @@ func createClientset(serverURL string, token string) (error, *kubernetes.Clients
 }
 
 func shortImage(fullImagePath string) string {
-	parts := strings.Split(fullImagePath, "/")
-	imageWithTag := parts[len(parts)-1]
-
-	return imageWithTag
+	if firstSlashIndex := strings.Index(fullImagePath, "/"); firstSlashIndex != -1 {
+		return fullImagePath[firstSlashIndex+1:]
+	}
+	return fullImagePath
 }
