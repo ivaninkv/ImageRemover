@@ -20,13 +20,13 @@ func GetImages(cfg config.Config) map[string]bool {
 		err, clientset := createClientset(cfg.KubeCluster[cluster].ServerUrl, cfg.KubeCluster[cluster].Token)
 		if err == nil {
 			// Сохранение деплойментов в срез
-			logger.Log.Debug().Str("namespace", cfg.KubeCluster[cluster].Namespace).Msg("Handling namespace:")
+			logger.Log.Info().Str("namespace", cfg.KubeCluster[cluster].Namespace).Msg("Handling namespace:")
 			deploymentList, err := clientset.AppsV1().Deployments(cfg.KubeCluster[cluster].Namespace).List(context.TODO(), metav1.ListOptions{})
 			if err == nil {
 				for _, dpl := range deploymentList.Items {
-					logger.Log.Debug().Str("deployment", dpl.Name).Msg("Handling deployment:")
+					logger.Log.Info().Str("deployment", dpl.Name).Msg("Handling deployment:")
 					for _, container := range dpl.Spec.Template.Spec.Containers {
-						logger.Log.Debug().Str("container", container.Image).Msg("Handling container:")
+						logger.Log.Info().Str("container", container.Image).Msg("Handling container:")
 						images[shortImage(container.Image)] = true
 					}
 				}
