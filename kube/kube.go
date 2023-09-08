@@ -14,7 +14,6 @@ import (
 func GetImages(cfg config.Config) map[string]bool {
 	logger.Log.Debug().Msg("Getting images from deployments")
 
-	// Мапа для хранения образов
 	images := make(map[string]bool)
 
 	for cluster := range cfg.KubeCluster {

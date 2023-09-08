@@ -12,8 +12,10 @@ import (
 	"strings"
 )
 
-func GetImages(cfg config.Config) (images map[string]bool) {
+func GetImages(cfg config.Config) map[string]bool {
 	logger.Log.Debug().Msg("Getting images from registry")
+
+	images := make(map[string]bool)
 
 	for _, registryConfig := range cfg.DockerRegistry {
 		headers := makeHeaders(registryConfig.User, registryConfig.Password)
