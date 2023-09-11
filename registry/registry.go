@@ -1,14 +1,12 @@
 package registry
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"github.com/opencontainers/go-digest"
 	"imageRemover/config"
 	"imageRemover/logger"
 	"imageRemover/output"
-	"net/http"
 	"strings"
 )
 
@@ -18,7 +16,7 @@ func GetImages(cfg config.Config) map[string]bool {
 	images := make(map[string]bool)
 
 	for _, registryConfig := range cfg.DockerRegistry {
-		headers := makeHeaders(registryConfig.User, registryConfig.Password)
+		headers := makeDockerHeaders(registryConfig.User, registryConfig.Password)
 
 		repos := getRepos(registryConfig.ServerUrl, &headers)
 
@@ -55,72 +53,35 @@ func GetImages(cfg config.Config) map[string]bool {
 	return images
 }
 
-func getRepos(serverUrl string, headers *map[string]string) []string {
-	catalogURL := fmt.Sprintf("%s/v2/_catalog", serverUrl)
-	catalogResp, err := doRequest("GET", catalogURL, headers)
-	if err != nil {
-		logger.Log.Error().Err(err).Msg("Can't get catalog from registry")
-		panic(err)
-	}
-	defer func() {
-		if err := catalogResp.Body.Close(); err != nil {
-			logger.Log.Error().Err(err).Msg("Can't close catalog response")
-		}
-	}()
-
-	var catalog struct {
-		Repositories []string `json:"repositories"`
-	}
-	if err := json.NewDecoder(catalogResp.Body).Decode(&catalog); err != nil {
-		logger.Log.Error().Err(err).Msg("Can't decode catalog from registry")
-		panic(err)
-	}
-	repos := catalog.Repositories
-	return repos
-}
-
 func DeleteImages(cfg config.Config, images map[string]bool) {
 	for _, registryConfig := range cfg.DockerRegistry {
-		headers := makeHeaders(registryConfig.User, registryConfig.Password)
+		dockerHeaders := makeDockerHeaders(registryConfig.User, registryConfig.Password)
 		for image := range images {
 			parts := strings.Split(image, ":")
 			repo, tag := parts[0], parts[1]
 			tagUrl := fmt.Sprintf("%s/v2/%s/manifests/%s", registryConfig.ServerUrl, repo, tag)
-			tagResp, err := doRequest("GET", tagUrl, &headers)
+			tagResp, err := doRequest("GET", tagUrl, &dockerHeaders)
 			if err != nil {
 				logger.Log.Warn().Err(err).Str("repo", repo).Str("tag", tag).
 					Msg("Can't get manifest from registry")
+				continue
 			}
 
 			dig, err := digest.Parse(tagResp.Header.Get("Docker-Content-Digest"))
 			if err != nil {
 				logger.Log.Warn().Err(err).Str("repo", repo).Str("tag", tag).
 					Msg("Can't parse digest from registry")
+				continue
 			}
-			digestUrl := fmt.Sprintf("%s/v2/%s/manifests/%s", registryConfig.ServerUrl, repo, dig)
+
 			if registryConfig.DeleteImages {
-				digResp, err := doRequest("DELETE", digestUrl, &headers)
-				if err != nil {
-					logger.Log.Warn().Err(err).Str("repo", repo).Str("tag", tag).
-						Str("digest", dig.String()).
-						Msg("Can't delete manifest from registry")
+				deleteImage(registryConfig.ServerUrl, repo, dig, dockerHeaders, tag)
+				if registryConfig.NexusUrl != "" {
+					err := deleteAsset(registryConfig.NexusUrl, registryConfig.User, registryConfig.Password, dig.String())
+					if err != nil {
+						logger.Log.Error().Err(err).Msg("Can't delete asset from nexus")
+					}
 				}
-
-				if digResp.StatusCode == http.StatusAccepted {
-					logger.Log.Info().Str("repo", repo).Str("tag", tag).
-						Str("digest", dig.String()).
-						Msg("Deleted manifest from registry")
-				} else {
-					logger.Log.Warn().Str("repo", repo).Str("tag", tag).
-						Str("digest", dig.String()).Str("status", digResp.Status).
-						Int("statusCode", digResp.StatusCode).
-						Msg("Can't delete manifest from registry. Registry returned: ")
-				}
-
-				if err := digResp.Body.Close(); err != nil {
-					logger.Log.Error().Err(err).Msg("Can't close digest response")
-				}
-
 			} else {
 				logger.Log.Info().Str("repo", repo).Str("tag", tag).
 					Str("digest", dig.String()).
@@ -132,27 +93,4 @@ func DeleteImages(cfg config.Config, images map[string]bool) {
 			}
 		}
 	}
-}
-
-func makeHeaders(user, password string) map[string]string {
-	auth := base64.StdEncoding.EncodeToString([]byte(
-		fmt.Sprintf("%s:%s", user, password)))
-	headers := map[string]string{
-		"Authorization": fmt.Sprintf("Basic %s", auth),
-		"Accept":        "application/vnd.docker.distribution.manifest.v2+json",
-	}
-	return headers
-}
-
-func doRequest(method string, url string, headers *map[string]string) (*http.Response, error) {
-	req, err := http.NewRequest(method, url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	for key, value := range *headers {
-		req.Header.Set(key, value)
-	}
-
-	return http.DefaultClient.Do(req)
 }
