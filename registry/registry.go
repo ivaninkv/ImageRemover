@@ -3,7 +3,6 @@ package registry
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/opencontainers/go-digest"
 	"imageRemover/config"
 	"imageRemover/logger"
 	"imageRemover/output"
@@ -61,21 +60,12 @@ func DeleteImages(cfg config.Config, images map[string]bool) {
 		for image := range images {
 			parts := strings.Split(image, ":")
 			repo, tag := parts[0], parts[1]
-			tagUrl := fmt.Sprintf("%s/v2/%s/manifests/%s", registryConfig.ServerUrl, repo, tag)
-			tagResp, err := doRequest("GET", tagUrl, &dockerHeaders)
+			dig, err := getDigest(registryConfig.ServerUrl,
+				registryConfig.User, registryConfig.Password, repo, tag)
 			if err != nil {
-				logger.Log.Warn().Err(err).Str("repo", repo).Str("tag", tag).
-					Msg("Can't get manifest from registry")
+				logger.Log.Error().Err(err).Msg("Can't get digest from registry")
 				continue
 			}
-
-			dig, err := digest.Parse(tagResp.Header.Get("Docker-Content-Digest"))
-			if err != nil {
-				logger.Log.Warn().Err(err).Str("repo", repo).Str("tag", tag).
-					Msg("Can't parse digest from registry")
-				continue
-			}
-
 			if registryConfig.DeleteImages {
 				deleteImage(registryConfig.ServerUrl, repo, dig, dockerHeaders, tag)
 				if registryConfig.Nexus.Url != "" {
@@ -89,10 +79,6 @@ func DeleteImages(cfg config.Config, images map[string]bool) {
 				logger.Log.Info().Str("repo", repo).Str("tag", tag).
 					Str("digest", dig.String()).
 					Msg("Skipped deleting manifest from registry")
-			}
-
-			if err := tagResp.Body.Close(); err != nil {
-				logger.Log.Error().Err(err).Msg("Can't close tag response")
 			}
 		}
 	}
