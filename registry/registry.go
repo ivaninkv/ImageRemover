@@ -76,8 +76,9 @@ func DeleteImages(cfg config.Config, images map[string]bool) {
 
 			if registryConfig.DeleteImages {
 				deleteImage(registryConfig.ServerUrl, repo, dig, dockerHeaders, tag)
-				if registryConfig.NexusUrl != "" {
-					err := deleteAsset(registryConfig.NexusUrl, registryConfig.User, registryConfig.Password, dig.String())
+				if registryConfig.Nexus.Url != "" {
+					err := deleteAsset(registryConfig.Nexus.Url, registryConfig.Nexus.RepositoryName,
+						registryConfig.User, registryConfig.Password, dig.String())
 					if err != nil {
 						logger.Log.Error().Err(err).Msg("Can't delete asset from nexus")
 					}

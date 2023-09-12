@@ -7,7 +7,9 @@ KubeCluster:
     Token: eyJhbGciOiJSUzI1NiIsImtpZCI6IlZfZlRLU093NTd0eEV0ZDY2MzZ3VXVuWVRRUk5YWjEtMGtLVjl2aTY2eG8ifQ.eyJhdWQiOlsiaHR0cHM6Ly9rdWJlcm5ldGVzLmRlZmF1bHQuc3ZjLmNsdXN0ZXIubG9jYWwiXSwiZXhwIjoxNzI1MjA4MDcxLCJpYXQiOjE2OTM2NzIwNzEsImlzcyI6Imh0dHBzOi8va3ViZXJuZXRlcy5kZWZhdWx0LnN2Yy5jbHVzdGVyLmxvY2FsIiwia3ViZXJuZXRlcy5pbyI6eyJuYW1lc3BhY2UiOiJhZmRldiIsInNlcnZpY2VhY2NvdW50Ijp7Im5hbWUiOiJnb3Byb2ciLCJ1aWQiOiJlMzdmYmI0Ni1lNmQ4LTQ3YmMtOWFhOS1lNzE0ZGVjOGQ4ZWQifX0sIm5iZiI6MTY5MzY3MjA3MSwic3ViIjoic3lzdGVtOnNlcnZpY2VhY2NvdW50OmFmZGV2OmdvcHJvZyJ9.r4h2gEoqBxLhb9FlU29IjBcV18DqMucMTIbCDTX116hyZ93DArue40vL0MedgVwxd7l8aY32Q4x__4JNodcn6M-gTZgRkL8oGRkiMFkuwS9DMYvVcsmbTS-uAyPVnQvvMAzwjpLGUlE9bve3xkRXbjRqOlZHrPotvZju9y1y0c0QEvqQ_yE8AEKtZ7WZmrqMwh_92KFuwdsOF71oFLFNGzAUJq5coeFtoK0nDJ8wPptTu1GhBPhMN9aKwqw3p-ZnaPfsV4RFLOnl_ieP5KxxJyrsFnv_zDzhxXyn9D34Za8RZVKacBEjf-YBmxRXIeX8AvkNSfEvvncO8y0mdJJepA
 DockerRegistry:
   - ServerUrl: http://localhost:6000
-    NexusUrl: http://localhost:8081
+    Nexus:
+      Url: http://localhost:8081
+      RepositoryName: docker-registry
     Folder: ikv
     User: ""
     Password: ""

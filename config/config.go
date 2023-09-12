@@ -15,8 +15,11 @@ type Config struct {
 		Token     string `yaml:"Token"`
 	} `yaml:"KubeCluster"`
 	DockerRegistry []struct {
-		ServerUrl    string `yaml:"ServerUrl"`
-		NexusUrl     string `yaml:"NexusUrl"`
+		ServerUrl string `yaml:"ServerUrl"`
+		Nexus     struct {
+			Url            string `yaml:"Url"`
+			RepositoryName string `yaml:"RepositoryName"`
+		} `yaml:"Nexus"`
 		Folder       string `yaml:"Folder"`
 		User         string `yaml:"User"`
 		Password     string `yaml:"Password"`
