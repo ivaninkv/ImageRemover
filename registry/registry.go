@@ -36,8 +36,10 @@ func GetImages(cfg config.Config) map[string]bool {
 					logger.Log.Error().Err(err).Msg("Can't decode tags from registry")
 				}
 				for _, tag := range tags.Tags {
-					logger.Log.Info().Str("tag", tag).Msg("Handling tag:")
-					images[fmt.Sprintf("%s:%s", repo, tag)] = true
+					if tag != "latest" {
+						logger.Log.Info().Str("tag", tag).Msg("Handling tag:")
+						images[fmt.Sprintf("%s:%s", repo, tag)] = true
+					}
 				}
 
 				if err := tagsResp.Body.Close(); err != nil {
